@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Annex Map : Ministerial Regulation</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { display: flex; margin: 0; }
+    #map { flex: 1; height: 100vh; position: relative; }
+    #mapTitle {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: white;
+      padding: 4px 10px;
+      font-weight: bold;
+      border: 1px solid #999;
+      font-size: 16px;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+    #logo {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      z-index: 998;
+      height: 45px;
+    }
+    #sidebar {
+      width: 300px;
+      padding: 10px;
+      background: #f2f2f2;
+      overflow-y: auto;
+      border-left: 1px solid #ccc;
+    }
+    .controls { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div id="map">
+    <div id="mapTitle">Annex Map : Ministerial Regulation</div>
+    <img id="logo" src="/static/logo_mapper.png" alt="Mapper Logo">
+  </div>
+  <div id="sidebar">
+    <div class="controls">
+      <label><input type="checkbox" id="grid4k"> Grid 4K</label><br>
+      <label><input type="checkbox" id="grid50k"> Grid 50K</label><br>
+      <label><input type="checkbox" id="nrf" checked> NRF</label>
+    </div>
+    <h3>Overlap Info</h3>
+    <div id="countText" style="font-weight:bold; margin-bottom: 5px;"></div>
+    <ul id="overlapList"></ul>
+    <div id="qrCodeWrapper" style="margin-top:10px;">
+      <h4>QR Code:</h4>
+      <img id="qrCode" src="" alt="QR code will appear here" style="max-width: 100%;">
+    </div>
+  </div>
+
+  <script>
+    const map = L.map('map').setView([13.5, 101], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const layers = { grid4k: null, grid50k: null, nrf: null };
+    let selectedFeature = null;
+    let nrfFeatures = [];
+
+    function loadLayer(name) {
+      let url = `/data/${name}`;
+      if (name === 'grid4k' || name === 'nrf') {
+        const bounds = map.getBounds();
+        url += `?minx=${bounds.getWest()}&miny=${bounds.getSouth()}&maxx=${bounds.getEast()}&maxy=${bounds.getNorth()}`;
+      }
+
+      fetch(url).then(res => res.json()).then(data => {
+        const geojson = L.geoJSON(data, {
+          style: name === 'nrf' ? {
+            color: 'white',       // outline
+            weight: 1,
+            fillColor: 'gray',    // fill
+            fillOpacity: 0.5
+          } : undefined,
+          onEachFeature: (feature, layer) => {
+            if (name === 'nrf') {
+              layer.bindPopup(Object.entries(feature.properties)
+                .map(([k, v]) => `<b>${k}:</b> ${v}`).join('<br>'));
+
+              layer.on('click', () => handleNrfClick(layer, feature));
+              nrfFeatures.push({ feature, layer });
+            }
+          }
+        }).addTo(map);
+
+        layers[name] = geojson;
+        if (name === 'nrf') geojson.bringToFront();
+      });
+    }
+
+    function handleNrfClick(layer, feature) {
+      const nrfName = feature.properties?.nrf_name || 'Unknown NRF';
+      if (selectedFeature) selectedFeature.setStyle({ color: 'white', fillColor: 'gray', fillOpacity: 0.5 });
+      layer.setStyle({ color: 'red' });
+      selectedFeature = layer;
+      layer.openPopup();
+
+      fetch('/intersect_nrf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ geometry: feature.geometry })
+      }).then(res => res.json()).then(list => {
+        const listElem = document.getElementById('overlapList');
+        const countText = document.getElementById('countText');
+        listElem.innerHTML = '';
+        countText.textContent = `Total 4K Mapsheets: ${list.length}`;
+        document.getElementById('qrCode').src = '';
+        fetch('/qr_code', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ mapsheets: [`NRF: ${nrfName}`, ...list] })
+}).then(res => res.blob()).then(blob => {
+  const url = URL.createObjectURL(blob);
+  document.getElementById('qrCode').src = url;
+});
+
+        list.forEach(entry => {
+          const li = document.createElement('li');
+          li.textContent = entry;
+          listElem.appendChild(li);
+        });
+      });
+    }
+
+    function removeLayer(name) {
+      if (layers[name]) {
+        map.removeLayer(layers[name]);
+        layers[name] = null;
+      }
+    }
+
+    function refreshNRF() {
+      if (document.getElementById('nrf').checked) {
+        removeLayer('nrf');
+        loadLayer('nrf');
+      }
+    }
+
+    map.on('moveend', () => refreshNRF());
+
+    document.getElementById('grid4k').onchange = e => e.target.checked ? loadLayer('grid4k') : removeLayer('grid4k');
+    document.getElementById('grid50k').onchange = e => e.target.checked ? loadLayer('grid50k') : removeLayer('grid50k');
+    document.getElementById('nrf').onchange = e => {
+      nrfFeatures = [];
+      refreshNRF();
+    };
+
+    loadLayer('nrf');
+  </script>
+</body>
+</html>

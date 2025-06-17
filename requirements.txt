@@ -1,0 +1,21 @@
+attrs @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/attrs_1699473735254/work
+blinker==1.9.0
+certifi==2025.4.26
+charset-normalizer==3.4.2
+click @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/click_1699473800648/work
+colorama @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/colorama_1699472650914/work
+Flask==3.1.1
+gunicorn==23.0.0
+idna==3.10
+itsdangerous==2.2.0
+Jinja2==3.1.6
+joblib @ file:///C:/b/abs_f4b98l6lgk/croot/joblib_1718217224240/work
+MarkupSafe==3.0.2
+numpy==2.3.0
+packaging==25.0
+requests==2.32.4
+scikit-learn @ file:///C:/b/abs_aajc9f7v6r/croot/scikit-learn_1722067652693/work/dist/scikit_learn-1.5.1-cp312-cp312-win_amd64.whl#sha256=96ed6defb86c154d2ff360afdbf0c37c33c4c729d4a15c9d8ada0b70fd817816
+scipy==1.15.3
+threadpoolctl @ file:///C:/b/abs_def0dwqlft/croot/threadpoolctl_1719407816649/work
+urllib3==2.4.0
+Werkzeug==3.1.3
