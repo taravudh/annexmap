@@ -3,4 +3,4 @@ services:
     name: annexmap
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m gunicorn app:app
+    startCommand: python3 -m gunicorn app:app
