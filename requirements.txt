@@ -1,7 +1,7 @@
-Flask==2.3.3
 gunicorn==21.2.0
-geopandas
-shapely
-pyproj
-fiona
-pandas
+Flask==2.3.3
+geopandas==1.1.0
+fiona==1.10.1
+pyproj==3.7.1
+shapely==2.1.1
+pandas==2.3.0
