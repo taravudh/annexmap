@@ -2,5 +2,9 @@ services:
   - type: web
     name: annexmap
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app"
+    region: singapore  # or change this to your preferred Render region
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
