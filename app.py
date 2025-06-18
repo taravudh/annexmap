@@ -23,22 +23,28 @@ def serve_geojson(layer_name):
     if not filename:
         return jsonify({"error": "Invalid layer name"}), 404
 
-    filepath = os.path.join(DATA_DIR, filename)
-    gdf = gpd.read_file(filepath).to_crs(epsg=4326)
-    gdf = gdf[~gdf.geometry.is_empty & gdf.geometry.notnull()]
+    try:
+        filepath = os.path.join(DATA_DIR, filename)
+        gdf = gpd.read_file(filepath).to_crs(epsg=4326)
+        gdf = gdf[~gdf.geometry.is_empty & gdf.geometry.notnull()]
 
-    if layer_name in ['grid4k', 'nrf']:
-        try:
-            minx = float(request.args.get('minx'))
-            miny = float(request.args.get('miny'))
-            maxx = float(request.args.get('maxx'))
-            maxy = float(request.args.get('maxy'))
-            bounds_geom = box(minx, miny, maxx, maxy)
-            gdf = gdf[gdf.intersects(bounds_geom)]
-        except:
-            pass
+        if layer_name in ['grid4k', 'nrf']:
+            try:
+                minx = float(request.args.get('minx'))
+                miny = float(request.args.get('miny'))
+                maxx = float(request.args.get('maxx'))
+                maxy = float(request.args.get('maxy'))
+                bounds_geom = box(minx, miny, maxx, maxy)
+                gdf = gdf[gdf.intersects(bounds_geom)]
+            except Exception as inner_e:
+                print(f"[WARN] Bounding box filter failed: {inner_e}")
 
-    return jsonify(gdf.__geo_interface__)
+        return jsonify(gdf.__geo_interface__)
+
+    except Exception as e:
+        print(f"[ERROR] Failed to load layer '{layer_name}': {e}")
+        return jsonify({"error": f"Failed to load {layer_name}: {str(e)}"}), 500
+
 
 @app.route('/intersect_nrf', methods=['POST'])
 def intersect_nrf():
