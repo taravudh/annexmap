@@ -5,4 +5,5 @@ fiona
 shapely
 pyproj
 pandas
+qrcode[pil]
 
